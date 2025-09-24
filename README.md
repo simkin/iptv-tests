@@ -4,8 +4,6 @@ A Python script designed to accurately measure and benchmark the channel tuning 
 
 The script generates a clean, color-coded HTML report with optional thumbnails, providing visual proof of successful channel tuning and making it easy to analyze and share the results.
 
-![Example HTML Report](https://i.imgur.com/gYdI5wW.png)
-
 ## Features
 
 * **Accurate Measurement:** Uses VLC's internal events to measure the exact time until video playback begins, providing realistic tuning times.
