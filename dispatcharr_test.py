@@ -49,8 +49,8 @@ except ImportError:
 
 # --- Configuration ---
 SERVER_ADDRESS = "192.168.0.150:9191"
-DISPATCHARR_USERNAME = "<USERNAME>"
-DISPATCHARR_PASSWORD = "<PASSWORD>"
+DISPATCHARR_USERNAME = "USERNAME"
+DISPATCHARR_PASSWORD = "password"
 BASELINE_M3U_URL = f"http://{SERVER_ADDRESS}/output/m3u?direct=true"
 NORMAL_M3U_URL = f"http://{SERVER_ADDRESS}/output/m3u"
 TARGET_GROUP = "Nederland"
@@ -67,8 +67,8 @@ VLC_ARGS = ["-Iskins", "--no-video-title-show", "--quiet"]
 
 # --- Docker Log Tailing Configuration ---
 SSH_HOSTNAME = "NAS"
-SSH_USERNAME = "lucas"
-SSH_PRIVATE_KEY_PATH = r"C:\Users\lmole\.ssh\openssh2.key"
+SSH_USERNAME = "username"
+SSH_PRIVATE_KEY_PATH = r"PRIVATE.KEY"
 DOCKER_CONTAINER_NAME = "dispatcharr"
 
 # --- Helper Classes ---
@@ -176,29 +176,24 @@ def tail_docker_logs(log_entries, lock, original_stderr):
         print(f"Executing remote command: {command}")
         _stdin, stdout, _stderr = client.exec_command(command)
         
-        # Health check to see if we receive any data
         stdout.channel.settimeout(5.0)
         try:
             first_line = stdout.readline()
             if not first_line:
                 print("Warning: Docker log stream started but was empty. The container may have no recent output.")
-                return # End the thread if there's no output
+                return
             
-            # Process the first line
             with lock:
                 log_entries.append((time.time(), first_line.strip()))
             
-            # Set back to blocking for the main loop
             stdout.channel.settimeout(None)
 
-            # Process the rest of the lines
             for line in iter(stdout.readline, ""):
                 with lock:
                     log_entries.append((time.time(), line.strip()))
         
         except socket.timeout:
             print("\n--- WARNING: Connected to Docker, but no log data was received after 5 seconds. ---")
-            print("--- The container might be silent or there could be a connection issue. ---")
 
     finally:
         client.close()
@@ -397,14 +392,14 @@ def display_results(df):
     headers = ["Channel"] + [c.split('\n')[0] for c in profile_cols]
     print("\n--- Channel Tuning Performance ---")
     print("{:<25}".format(headers[0]), end="")
-    for h in headers[1:]: print("{:>25}".format(h), end="")
-    print("\n" + "-" * (25 * len(headers)))
+    for h in headers[1:]: print("{:>35}".format(h), end="")
+    print("\n" + "-" * (25 + 35 * (len(headers)-1)))
     for channel_name, row_data in df.iterrows():
         print("{:<25}".format(channel_name), end="")
         for col in profile_cols:
             time_val = row_data[col]
             content = f"{time_val:.4f}s" if pd.notna(time_val) else "Failed"
-            print("{:>25}".format(content), end="")
+            print("{:>35}".format(content), end="")
         print()
 
 def generate_html_report(df, probe_enabled=False, debug_enabled=False):
@@ -446,8 +441,10 @@ def generate_html_report(df, probe_enabled=False, debug_enabled=False):
         f.write("</tbody></table>")
 
         f.write("<h2>Detailed Results</h2>")
-        f.write("<table><thead><tr><th rowspan='2'>Channel</th>")
-        for p in profile_headers_data: f.write(f"<th colspan='{colspan}'>{p['name']}<br>{p['timestamp']}</th>")
+        f.write("<table><thead><tr><th rowspan'2'>Channel</th>")
+        for p in profile_headers_data:
+            header_text = f"{p['name']}<br>{p['timestamp']}"
+            f.write(f"<th colspan='{colspan}'>{header_text}</th>")
         f.write("</tr><tr>")
         for _ in profile_headers_data:
             if probe_enabled: f.write("<th>Stream Info</th>")
@@ -521,6 +518,9 @@ def main():
 
                 # Run a test to check for server strain with a 2-second delay between zaps
                 python %(prog)s --tuningdelay=2
+                
+                # Run a test suite across multiple delays, from 1 to 4 seconds
+                python %(prog)s --tuningdelay=1-4
                 '''),
             formatter_class=argparse.RawTextHelpFormatter
         )
@@ -530,7 +530,7 @@ def main():
         parser.add_argument("--probe", action="store_true", help="Enable FFprobe stream analysis (default: disabled).")
         parser.add_argument("--debug", action="store_true", help="Enable debug mode: tails Docker logs and shows a debug column in the report.")
         parser.add_argument("--profiles", type=str, help="Comma-separated list of numeric profile numbers to test (e.g., 1,3,5 or 'all').")
-        parser.add_argument("--tuningdelay", type=int, default=0, help="Delay in seconds between each channel tuning test.")
+        parser.add_argument("--tuningdelay", type=str, default="0", help="Delay in seconds between tunes for profiles. Can be a single number (e.g., 2) or a range (e.g., 1-4). Baseline test always uses 0 delay.")
         
         # --- Opt-out Flags (default is True) ---
         parser.add_argument("--no-report", dest="report", action="store_false", help="Disable the HTML report generation (default: enabled).")
@@ -540,6 +540,22 @@ def main():
         
         sys.stdout = tee
         sys.stderr = tee
+        
+        delay_values = []
+        try:
+            if '-' in args.tuningdelay:
+                start, end = map(int, args.tuningdelay.split('-'))
+                if start >= end:
+                    print("Error: In tuning delay range, start must be less than end.")
+                    return
+                delay_values = list(range(start, end + 1))
+            else:
+                delay_values = [int(args.tuningdelay)]
+        except ValueError:
+            print(f"Error: Invalid format for --tuningdelay. Use a number or a range like '1-4'.")
+            return
+        
+        print(f"Profile tuning delays to be tested: {delay_values}")
 
         docker_log_entries = []
         
@@ -563,6 +579,13 @@ def main():
                 os.remove(RESULTS_FILE)
                 print(f"Deleted previous results file: {RESULTS_FILE}")
 
+            try:
+                df = pd.read_csv(RESULTS_FILE, index_col=0)
+                print(f"Loaded existing results from: {RESULTS_FILE}")
+            except FileNotFoundError:
+                df = pd.DataFrame()
+                print("No existing results file found. Starting fresh.")
+
             print("\nAvailable Streaming Profiles:")
             for i, p in enumerate(profiles): print(f"  {i+1}) {p['name']} (ID: {p['id']})")
 
@@ -583,10 +606,13 @@ def main():
             else:
                 with print_lock:
                     prompt = "\nEnter profile numbers to test (e.g., 1,3 or all): "
-                    print(prompt, end='', file=original_stdout)
+                    original_stdout.write(prompt)
                     original_stdout.flush()
                     selection = sys.stdin.readline().strip()
                 print(selection) 
+                if not selection:
+                    print("No selection made. Exiting.")
+                    return
                 if selection.lower() == 'all':
                     selected_profiles = profiles
                 else:
@@ -597,39 +623,56 @@ def main():
                             print("No valid profiles selected."); return
                     except (ValueError, EOFError):
                         print("Invalid selection."); return
-
-            df = pd.DataFrame()
-
-            print(f"\n--- Testing Baseline (Direct) Profile ---")
-            baseline_channels = parse_m3u(BASELINE_M3U_URL, requests.Session())
-            if baseline_channels:
-                results = run_test_session(baseline_channels, docker_log_entries, print_lock, args.view, args.thumbnail, args.probe, args.debug, args.tuningdelay)
-                ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-                col = f"Baseline (direct)\n{ts}"
-                df[col] = pd.Series({k: v['time'] for k,v in results.items()})
-                df[f"{col}_thumb"] = pd.Series({k: v['thumb'] for k,v in results.items()})
-                if args.probe:
-                    df[f"{col}_info"] = pd.Series({k: v['info'] for k,v in results.items()})
-                    df[f"{col}_info_retry"] = pd.Series({k: v['info_retry'] for k,v in results.items()})
-                if args.debug:
-                    df[f"{col}_debug"] = pd.Series({k: v['debug'] for k,v in results.items()})
-
-            for profile in selected_profiles:
-                print(f"\n--- Testing Profile: {profile['name']} ---")
-                if not set_active_profile(api_session, settings_id, profile['id']): continue
-                time.sleep(2)
-                channels = parse_m3u(NORMAL_M3U_URL, api_session)
-                if channels:
-                    results = run_test_session(channels, docker_log_entries, print_lock, args.view, args.thumbnail, args.probe, args.debug, args.tuningdelay)
+            
+            # --- New: Baseline test is now outside the loop and always uses 0 delay ---
+            run_baseline = not any('Baseline (direct)' in col for col in df.columns)
+            if run_baseline:
+                print(f"\n--- Testing Baseline (Direct) Profile (0s Delay) ---")
+                baseline_channels = parse_m3u(BASELINE_M3U_URL, requests.Session())
+                if baseline_channels:
+                    # Always use a 0 second delay for the baseline test
+                    results = run_test_session(baseline_channels, docker_log_entries, print_lock, args.view, args.thumbnail, args.probe, args.debug, 0)
+                    
+                    temp_df = pd.DataFrame()
                     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    col = f"{profile['name']}\n{ts}"
-                    df[col] = pd.Series({k: v['time'] for k,v in results.items()})
-                    df[f"{col}_thumb"] = pd.Series({k: v['thumb'] for k,v in results.items()})
+                    col = f"Baseline (direct) (delay: 0s)\n{ts}"
+                    temp_df[col] = pd.Series({k: v['time'] for k,v in results.items()})
+                    temp_df[f"{col}_thumb"] = pd.Series({k: v['thumb'] for k,v in results.items()})
                     if args.probe:
-                        df[f"{col}_info"] = pd.Series({k: v['info'] for k,v in results.items()})
-                        df[f"{col}_info_retry"] = pd.Series({k: v['info_retry'] for k,v in results.items()})
+                        temp_df[f"{col}_info"] = pd.Series({k: v['info'] for k,v in results.items()})
+                        temp_df[f"{col}_info_retry"] = pd.Series({k: v['info_retry'] for k,v in results.items()})
                     if args.debug:
-                        df[f"{col}_debug"] = pd.Series({k: v['debug'] for k,v in results.items()})
+                        temp_df[f"{col}_debug"] = pd.Series({k: v['debug'] for k,v in results.items()})
+                    
+                    df = df.join(temp_df, how='outer')
+            else:
+                print(f"\n--- Skipping Baseline Test (results already exist) ---")
+
+
+            # --- Loop for each delay value for PROFILES ONLY ---
+            for delay in delay_values:
+                print(f"\n{'='*20} RUNNING PROFILE TESTS WITH {delay}s DELAY {'='*20}")
+                
+                for profile in selected_profiles:
+                    print(f"\n--- Testing Profile: {profile['name']} ---")
+                    if not set_active_profile(api_session, settings_id, profile['id']): continue
+                    time.sleep(2)
+                    channels = parse_m3u(NORMAL_M3U_URL, api_session)
+                    if channels:
+                        results = run_test_session(channels, docker_log_entries, print_lock, args.view, args.thumbnail, args.probe, args.debug, delay)
+                        
+                        temp_df = pd.DataFrame()
+                        ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        col = f"{profile['name']} (delay: {delay}s)\n{ts}"
+                        temp_df[col] = pd.Series({k: v['time'] for k,v in results.items()})
+                        temp_df[f"{col}_thumb"] = pd.Series({k: v['thumb'] for k,v in results.items()})
+                        if args.probe:
+                            temp_df[f"{col}_info"] = pd.Series({k: v['info'] for k,v in results.items()})
+                            temp_df[f"{col}_info_retry"] = pd.Series({k: v['info_retry'] for k,v in results.items()})
+                        if args.debug:
+                            temp_df[f"{col}_debug"] = pd.Series({k: v['debug'] for k,v in results.items()})
+                        
+                        df = df.join(temp_df, how='outer')
 
             if active_profile_uuid:
                 print(f"\n--- Resetting to original active profile ---")
@@ -639,11 +682,13 @@ def main():
                 time_cols = sorted([c for c in df.columns if not c.endswith(('_thumb', '_info', '_info_retry', '_debug'))], key=lambda x: 0 if 'Baseline' in x else 1)
                 all_cols = []
                 for c in time_cols:
-                    all_cols.extend([c, f"{c}_thumb"])
-                    if args.probe:
+                    all_cols.append(c)
+                    if f"{c}_thumb" in df.columns: all_cols.append(f"{c}_thumb")
+                    if args.probe and f"{c}_info" in df.columns:
                         all_cols.extend([f"{c}_info", f"{c}_info_retry"])
-                    if args.debug:
+                    if args.debug and f"{c}_debug" in df.columns:
                         all_cols.append(f"{c}_debug")
+                
                 df = df.reindex(columns=all_cols)
                 df.to_csv(RESULTS_FILE)
                 print(f"\nResults saved to: {RESULTS_FILE}")
