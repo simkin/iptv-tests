@@ -1,4 +1,4 @@
-## \# IPTV Tuning Tester with Multi-Thumbnail HTML Reporting
+# DISPATCHARR Tuning Tester with Multi-Thumbnail HTML Reporting
 
 A Python-based tool for benchmarking IPTV channel tuning times across
 different streaming profiles.\
@@ -6,8 +6,6 @@ It integrates **FFprobe** for accurate stream analysis and **VLC** for
 playback performance testing.\
 Optional features include real-time **Docker log tailing over SSH** for
 error correlation, and a detailed HTML report with multi-thumbnails.
-
-------------------------------------------------------------------------
 
 ## Features
 
@@ -19,8 +17,6 @@ error correlation, and a detailed HTML report with multi-thumbnails.
     errors.
 -   Results saved in both **CSV** and **HTML** formats.
 -   Console output mirrored to **log.txt**.
-
-------------------------------------------------------------------------
 
 ## Requirements
 
@@ -38,8 +34,6 @@ error correlation, and a detailed HTML report with multi-thumbnails.
         separately)
     -   VLC media player
     -   (Optional) Docker & SSH access for log tailing
-
-------------------------------------------------------------------------
 
 ## Usage
 
@@ -61,8 +55,6 @@ python iptv_tester.py --tuningdelay=2
 # Run a test suite across multiple delays (1–4 seconds)
 python iptv_tester.py --tuningdelay=1-4
 ```
-
-------------------------------------------------------------------------
 
 ## Command-Line Arguments
 
@@ -94,8 +86,6 @@ python iptv_tester.py --tuningdelay=1-4
   `--no-thumbnail`                         Disable thumbnail snapshots.
   -----------------------------------------------------------------------
 
-------------------------------------------------------------------------
-
 ## Output
 
 -   **log.txt** → Console output log
@@ -103,15 +93,11 @@ python iptv_tester.py --tuningdelay=1-4
 -   **tuning_report.html** → Interactive HTML report with thumbnails &
     stream info
 
-------------------------------------------------------------------------
-
 ## Example HTML Report
 
 The generated report includes: - Average tuning times per profile -
 Thumbnails for visual verification - Stream info (video/audio codecs) -
 Debug logs (if enabled)
-
-------------------------------------------------------------------------
 
 ## Notes
 
@@ -120,8 +106,6 @@ Debug logs (if enabled)
     environment.
 -   SSH-based Docker log tailing requires a valid private key and
     hostname in the configuration section of the script.
-
-------------------------------------------------------------------------
 
 ## License
 
