@@ -4,7 +4,7 @@
 
 This project provides a Python-based test suite for measuring and
 analyzing **channel tuning times** in
-[**Dispatcharr**]([https://github.com/Dispatcharr/Dispatcharr).\
+[**Dispatcharr**](https://github.com/Dispatcharr/Dispatcharr).\
 It integrates **VLC** for playback timing, **FFprobe** for stream
 analysis, and can optionally pull **Docker logs over SSH** for
 debugging.\
