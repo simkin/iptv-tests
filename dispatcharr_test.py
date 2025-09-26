@@ -50,7 +50,7 @@ except ImportError:
 # --- Configuration ---
 SERVER_ADDRESS = "192.168.0.150:9191"
 DISPATCHARR_USERNAME = "USERNAME"
-DISPATCHARR_PASSWORD = "password"
+DISPATCHARR_PASSWORD = "PASSWORD"
 BASELINE_M3U_URL = f"http://{SERVER_ADDRESS}/output/m3u?direct=true"
 NORMAL_M3U_URL = f"http://{SERVER_ADDRESS}/output/m3u"
 TARGET_GROUP = "Nederland"
@@ -67,8 +67,8 @@ VLC_ARGS = ["-Iskins", "--no-video-title-show", "--quiet"]
 
 # --- Docker Log Tailing Configuration ---
 SSH_HOSTNAME = "NAS"
-SSH_USERNAME = "username"
-SSH_PRIVATE_KEY_PATH = r"PRIVATE.KEY"
+SSH_USERNAME = "USERNAME"
+SSH_PRIVATE_KEY_PATH = r"openssh2.key"
 DOCKER_CONTAINER_NAME = "dispatcharr"
 
 # --- Helper Classes ---
@@ -448,7 +448,7 @@ def generate_html_report(df, probe_enabled=False, debug_enabled=False):
         f.write("</tr><tr>")
         for _ in profile_headers_data:
             if probe_enabled: f.write("<th>Stream Info</th>")
-            f.write("<th>Time</th><th>Thumbnail</th>")
+            f.write("<th>Thumbnail</th><th>Time</th>")
             if debug_enabled: f.write("<th>Debug</th>")
         f.write("</tr></thead><tbody>")
 
