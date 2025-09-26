@@ -1,43 +1,129 @@
-# IPTV Channel Tuning Performance Tester
+## \# IPTV Tuning Tester with Multi-Thumbnail HTML Reporting
 
-A Python script designed to accurately measure and benchmark the channel tuning performance of IPTV streams from M3U playlists. It uses the `libvlc` engine to get precise "time-to-video" metrics, comparing a baseline (direct stream) against one or more proxied test runs.
+A Python-based tool for benchmarking IPTV channel tuning times across
+different streaming profiles.\
+It integrates **FFprobe** for accurate stream analysis and **VLC** for
+playback performance testing.\
+Optional features include real-time **Docker log tailing over SSH** for
+error correlation, and a detailed HTML report with multi-thumbnails.
 
-The script generates a clean, color-coded HTML report with optional thumbnails, providing visual proof of successful channel tuning and making it easy to analyze and share the results.
+------------------------------------------------------------------------
 
 ## Features
 
-* **Accurate Measurement:** Uses VLC's internal events to measure the exact time until video playback begins, providing realistic tuning times.
-* **Comparative Analysis:** Automatically runs a baseline test against a direct stream URL and compares it with subsequent tests against proxied URLs.
-* **Persistent Results:** Saves test sessions to a `.csv` file, allowing you to append new test runs and track performance over time.
-* **Interactive Viewing Mode:** An optional `--view` flag lets you watch the channels being tested in a real-time video window.
-* **Visual Validation:** A `--thumbnail` flag captures a snapshot of each successfully tuned channel.
-* **Detailed HTML Reports:** Generates a single, self-contained HTML file with color-coded results and embedded thumbnails for easy analysis.
-* **Smart Error Handling:** Tolerates transient stream errors and only marks a tune as failed if playback doesn't start within the configured timeout.
-* **Client Emulation:** Uses a TiviMate User-Agent to ensure compatibility with IPTV servers that restrict access to unknown clients.
+-   Measures IPTV channel **tuning times** using VLC.
+-   Generates an **HTML report** with thumbnails, averages, and
+    per-channel details.
+-   Supports **FFprobe stream analysis** for video/audio codec info.
+-   Real-time **Docker log tailing via SSH** for debugging server-side
+    errors.
+-   Results saved in both **CSV** and **HTML** formats.
+-   Console output mirrored to **log.txt**.
+
+------------------------------------------------------------------------
 
 ## Requirements
 
-* **Python 3.6+**
-* **VLC Media Player:** The script requires a local installation of VLC. The `python-vlc` library needs to find the VLC installation to function.
-* **Python Libraries:** Install the necessary libraries using pip:
+-   Python 3.8+
 
-pip install pandas requests python-vlc
-## How to Use
+-   Dependencies (install via pip):
 
-1.  **Configure the Script:** Open `iptv_tuning_tester.py` and edit the variables in the **Configuration** section to match your setup (server address, channel group, etc.).
+    ``` bash
+    pip install requests pandas python-vlc ffmpeg-python paramiko
+    ```
 
-2.  **Initial Run (Baseline + First Test):** Run the script for the first time. It will automatically create the results file by running a baseline test and your first normal test.
-python iptv_tuning_tester.py
-3.  **Append a New Test:** To run another test and add its results as a new column, simply run the script again.
-python iptv_tuning_tester.py
-4.  **Reset and Start Over:** To delete all previous results and start a fresh test (including a new baseline), use the `--reset` flag.
-python iptv_tuning_tester.py --reset
-### Command-Line Arguments
+-   System dependencies:
 
-* `--view`: Opens a video window to show each channel as it's being tested.
-* `--thumbnail`: Captures a snapshot of each successful tune and saves it to the `thumbnails/` folder.
-* `--report`: Generates (or updates) the `tuning_report.html` file after the test run is complete.
-* `--reset`: Deletes `tuning_results.csv` before running to start a fresh series of tests.
+    -   [FFmpeg](https://ffmpeg.org/download.html) (must be installed
+        separately)
+    -   VLC media player
+    -   (Optional) Docker & SSH access for log tailing
 
-**Example of a full test run with all features enabled:**
-python iptv_tuning_tester.py --reset --view --thumbnail --report
+------------------------------------------------------------------------
+
+## Usage
+
+Run the script with various options:
+
+``` bash
+# Run a full test with default features (report + thumbnails)
+python iptv_tester.py
+
+# Run with FFprobe analysis + debug mode (includes Docker log tailing)
+python iptv_tester.py --probe --debug
+
+# Run without thumbnails and report (fast mode)
+python iptv_tester.py --no-thumbnail --no-report --profiles=1,4
+
+# Add delay between channel zaps to test load handling
+python iptv_tester.py --tuningdelay=2
+
+# Run a test suite across multiple delays (1–4 seconds)
+python iptv_tester.py --tuningdelay=1-4
+```
+
+------------------------------------------------------------------------
+
+## Command-Line Arguments
+
+  -----------------------------------------------------------------------
+  Argument                                 Description
+  ---------------------------------------- ------------------------------
+  `--reset`                                Reset previous results
+                                           (deletes CSV).
+
+  `--view`                                 Show VLC video window during
+                                           testing.
+
+  `--probe`                                Enable FFprobe stream
+                                           analysis.
+
+  `--debug`                                Enable debug mode (Docker log
+                                           tailing + debug column).
+
+  `--profiles`                             Comma-separated profile list
+                                           (e.g., `1,3,5` or `all`).
+
+  `--tuningdelay`                          Delay in seconds between tunes
+                                           (single number or range
+                                           `1-4`).
+
+  `--no-report`                            Disable HTML report
+                                           generation.
+
+  `--no-thumbnail`                         Disable thumbnail snapshots.
+  -----------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+## Output
+
+-   **log.txt** → Console output log
+-   **tuning_results.csv** → Stores timing results
+-   **tuning_report.html** → Interactive HTML report with thumbnails &
+    stream info
+
+------------------------------------------------------------------------
+
+## Example HTML Report
+
+The generated report includes: - Average tuning times per profile -
+Thumbnails for visual verification - Stream info (video/audio codecs) -
+Debug logs (if enabled)
+
+------------------------------------------------------------------------
+
+## Notes
+
+-   Default configuration points to a local Dispatcharr server
+    (`192.168.0.150:9191`). Update constants in the script to match your
+    environment.
+-   SSH-based Docker log tailing requires a valid private key and
+    hostname in the configuration section of the script.
+
+------------------------------------------------------------------------
+
+## License
+
+This project is provided **as-is** under an open license. Use at your
+own risk.
