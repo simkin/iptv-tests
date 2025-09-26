@@ -410,8 +410,8 @@ def generate_html_report(df, probe_enabled=False, debug_enabled=False):
     profile_cols = [c for c in df.columns if not c.endswith(('_thumb', '_info', '_info_retry', '_debug'))]
     profile_headers_data = [{"full_col_name": c, "name": c.split('\n')[0], "timestamp": c.split('\n')[1] if '\n' in c else ""} for c in profile_cols]
     profile_avgs = {p['name']: df[p['full_col_name']].mean() for p in profile_headers_data}
-    
-    colspan = 2 + (1 if probe_enabled else 0) + (1 if debug_enabled else 0)
+
+    colspan = (1 if probe_enabled else 0) + 2 + (1 if debug_enabled else 0)
 
     with open(REPORT_FILE, "w", encoding="utf-8") as f:
         f.write("""<!DOCTYPE html>
@@ -433,6 +433,7 @@ def generate_html_report(df, probe_enabled=False, debug_enabled=False):
         </style></head><body>
         <h1>IPTV Channel Tuning Performance</h1>""")
 
+        # Profile averages
         f.write("<h2>Profile Averages</h2>")
         f.write("<table style='width: 60%; margin-left: auto; margin-right: auto;'><thead><tr><th class='avg-header'>Profile</th><th class='avg-header'>Average Time (s)</th></tr></thead><tbody>")
         for name, avg in sorted(profile_avgs.items(), key=lambda item: item[1] if pd.notna(item[1]) else float('inf')):
@@ -440,8 +441,9 @@ def generate_html_report(df, probe_enabled=False, debug_enabled=False):
             f.write(f"<tr><td>{name}</td><td class='{css_class}'>{content}</td></tr>")
         f.write("</tbody></table>")
 
+        # Detailed results header
         f.write("<h2>Detailed Results</h2>")
-        f.write("<table><thead><tr><th rowspan'2'>Channel</th>")
+        f.write("<table><thead><tr><th rowspan='2'>Channel</th>")
         for p in profile_headers_data:
             header_text = f"{p['name']}<br>{p['timestamp']}"
             f.write(f"<th colspan='{colspan}'>{header_text}</th>")
@@ -452,43 +454,57 @@ def generate_html_report(df, probe_enabled=False, debug_enabled=False):
             if debug_enabled: f.write("<th>Debug</th>")
         f.write("</tr></thead><tbody>")
 
+        # Data rows
         for channel_name, row_data in df.iterrows():
             f.write(f"<tr><td><b>{channel_name}</b></td>")
             for p in profile_headers_data:
                 col = p['full_col_name']
-                
+
                 if probe_enabled:
                     info_val = row_data.get(f"{col}_info", "N/A")
                     if row_data.get(f"{col}_info_retry", False):
                         info_val += "<br><small class='retry-note'>(retry was needed)</small>"
                     f.write(f"<td class='info-cell'>{info_val}</td>")
-                
-                time_val = row_data.get(col)
-                content, css_class = (f"{time_val:.4f}s", "fast" if time_val < 1.5 else "medium" if time_val < 3.0 else "slow") if pd.notna(time_val) else ("Failed", "fail")
-                f.write(f"<td class='{css_class}'>{content}</td>")
-                
+
                 thumb_path = row_data.get(f"{col}_thumb")
                 if pd.notna(thumb_path) and os.path.exists(thumb_path):
                     b64 = encode_thumbnail_to_base64(thumb_path)
                     f.write(f"<td><img src='data:image/png;base64,{b64}' alt='Thumb'></td>")
-                else: f.write("<td>—</td>")
+                else:
+                    f.write("<td>—</td>")
+
+                time_val = row_data.get(col)
+                if pd.notna(time_val):
+                    content = f"{time_val:.4f}s"
+                    css_class = "fast" if time_val < 1.5 else "medium" if time_val < 3.0 else "slow"
+                else:
+                    content, css_class = "Failed", "fail"
+                f.write(f"<td class='{css_class}'>{content}</td>")
 
                 if debug_enabled:
                     debug_val = row_data.get(f"{col}_debug", "")
                     f.write(f"<td class='debug-cell'>{debug_val}</td>")
             f.write("</tr>")
-            
+
+        # Averages row
         f.write("<tr><td><b>Average</b></td>")
         for p in profile_headers_data:
             avg = profile_avgs.get(p['name'])
-            content, css_class = (f"<b>{avg:.4f}s</b>", "fast" if avg < 1.5 else "medium" if avg < 3.0 else "slow") if pd.notna(avg) else ("N/A", "fail")
-            if probe_enabled: f.write("<td>—</td>")
-            f.write(f"<td class='{css_class}'>{content}</td><td>—</td>")
-            if debug_enabled: f.write("<td>—</td>")
+            if pd.notna(avg):
+                content = f"<b>{avg:.4f}s</b>"
+                css_class = "fast" if avg < 1.5 else "medium" if avg < 3.0 else "slow"
+            else:
+                content, css_class = "N/A", "fail"
+
+            if probe_enabled:
+                f.write("<td>—</td>")
+            f.write("<td>—</td>")
+            f.write(f"<td class='{css_class}'>{content}</td>")
+            if debug_enabled:
+                f.write("<td>—</td>")
         f.write("</tr></tbody></table></body></html>")
     print(f"HTML report generated: {REPORT_FILE}")
 
-# --- Main ---
 def main():
     print("IPTV Tuning Tester. Run with -h or --help for all options and usage examples.")
     
@@ -549,9 +565,12 @@ def main():
                     print("Error: In tuning delay range, start must be less than end.")
                     return
                 delay_values = list(range(start, end + 1))
+            elif ',' in args.tuningdelay:
+                delay_values = [int(x.strip()) for x in args.tuningdelay.split(',') if x.strip()]
             else:
                 delay_values = [int(args.tuningdelay)]
         except ValueError:
+
             print(f"Error: Invalid format for --tuningdelay. Use a number or a range like '1-4'.")
             return
         
