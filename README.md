@@ -1,28 +1,32 @@
-# DISPATCHARR Tuning Tester with Multi-Thumbnail HTML Reporting
+# IPTV Tuning Tester for Dispatcharr
 
-A Python-based tool for benchmarking IPTV channel tuning times across
-different streaming profiles.\
-It integrates **FFprobe** for accurate stream analysis and **VLC** for
-playback performance testing.\
-Optional features include real-time **Docker log tailing over SSH** for
-error correlation, and a detailed HTML report with multi-thumbnails.
+*A benchmarking tool with multi-thumbnail HTML reporting*
+
+This project provides a Python-based test suite for measuring and
+analyzing **channel tuning times** in
+[**Dispatcharr**](https://github.com/).\
+It integrates **VLC** for playback timing, **FFprobe** for stream
+analysis, and can optionally pull **Docker logs over SSH** for
+debugging.\
+A detailed **HTML report with multi-thumbnails** is generated to
+visualize performance.
 
 ## Features
 
--   Measures IPTV channel **tuning times** using VLC.
--   Generates an **HTML report** with thumbnails, averages, and
-    per-channel details.
--   Supports **FFprobe stream analysis** for video/audio codec info.
--   Real-time **Docker log tailing via SSH** for debugging server-side
-    errors.
--   Results saved in both **CSV** and **HTML** formats.
+-   Benchmark IPTV channel **tuning times** across Dispatcharr
+    profiles.\
+-   Generate an **HTML report** with thumbnails, averages, and
+    per-channel details.\
+-   Collect stream details via **FFprobe** (video/audio codec info).\
+-   Optional **Docker log tailing via SSH** for server-side debugging.\
+-   Save results in **CSV + HTML** formats.\
 -   Console output mirrored to **log.txt**.
 
 ## Requirements
 
--   Python 3.8+
+-   Python 3.8+\
 
--   Dependencies (install via pip):
+-   Python dependencies:
 
     ``` bash
     pip install requests pandas python-vlc ffmpeg-python paramiko
@@ -30,17 +34,17 @@ error correlation, and a detailed HTML report with multi-thumbnails.
 
 -   System dependencies:
 
-    -   [FFmpeg](https://ffmpeg.org/download.html) (must be installed
-        separately)
-    -   VLC media player
+    -   [FFmpeg](https://ffmpeg.org/download.html) (installed
+        separately)\
+    -   VLC media player\
     -   (Optional) Docker & SSH access for log tailing
 
 ## Usage
 
-Run the script with various options:
+Run the script with different options depending on your test scenario:
 
 ``` bash
-# Run a full test with default features (report + thumbnails)
+# Full test with default settings (report + thumbnails)
 python iptv_tester.py
 
 # Run with FFprobe analysis + debug mode (includes Docker log tailing)
@@ -49,10 +53,10 @@ python iptv_tester.py --probe --debug
 # Run without thumbnails and report (fast mode)
 python iptv_tester.py --no-thumbnail --no-report --profiles=1,4
 
-# Add delay between channel zaps to test load handling
+# Add a 2s delay between channel zaps
 python iptv_tester.py --tuningdelay=2
 
-# Run a test suite across multiple delays (1–4 seconds)
+# Sweep across multiple delays (1–4 seconds)
 python iptv_tester.py --tuningdelay=1-4
 ```
 
@@ -88,24 +92,25 @@ python iptv_tester.py --tuningdelay=1-4
 
 ## Output
 
--   **log.txt** → Console output log
--   **tuning_results.csv** → Stores timing results
+-   **log.txt** → Console output log\
+-   **tuning_results.csv** → Stores timing results\
 -   **tuning_report.html** → Interactive HTML report with thumbnails &
     stream info
 
-## Example HTML Report
+## Example Report
 
-The generated report includes: - Average tuning times per profile -
-Thumbnails for visual verification - Stream info (video/audio codecs) -
-Debug logs (if enabled)
+The HTML report includes: - Average tuning times per profile\
+- Thumbnails for visual verification\
+- Stream info (video/audio codecs)\
+- Debug logs (if enabled)
 
 ## Notes
 
 -   Default configuration points to a local Dispatcharr server
-    (`192.168.0.150:9191`). Update constants in the script to match your
-    environment.
+    (`192.168.0.150:9191`).\
+    Update constants in the script to match your environment.\
 -   SSH-based Docker log tailing requires a valid private key and
-    hostname in the configuration section of the script.
+    hostname configured in the script.
 
 ## License
 
