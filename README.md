@@ -13,18 +13,17 @@ visualize performance.
 
 ## Features
 
--   Benchmark IPTV channel **tuning times** across Dispatcharr
-    profiles.\
+-   Benchmark IPTV channel **tuning times** across Dispatcharr profiles
 -   Generate an **HTML report** with thumbnails, averages, and
-    per-channel details.\
--   Collect stream details via **FFprobe** (video/audio codec info).\
--   Optional **Docker log tailing via SSH** for server-side debugging.\
--   Save results in **CSV + HTML** formats.\
--   Console output mirrored to **log.txt**.
+    per-channel details
+-   Collect stream details via **FFprobe** (video/audio codec info)
+-   Optional **Docker log tailing via SSH** for server-side debugging
+-   Save results in **CSV + HTML** formats
+-   Console output mirrored to **log.txt**
 
 ## Requirements
 
--   Python 3.8+\
+-   Python 3.8+
 
 -   Python dependencies:
 
@@ -35,8 +34,8 @@ visualize performance.
 -   System dependencies:
 
     -   [FFmpeg](https://ffmpeg.org/download.html) (installed
-        separately)\
-    -   VLC media player\
+        separately)
+    -   VLC media player
     -   (Optional) Docker & SSH access for log tailing
 
 ## Usage
@@ -92,17 +91,16 @@ python iptv_tester.py --tuningdelay=1-4
 
 ## Output
 
--   **log.txt** → Console output log\
--   **tuning_results.csv** → Stores timing results\
+-   **log.txt** → Console output log
+-   **tuning_results.csv** → Stores timing results
 -   **tuning_report.html** → Interactive HTML report with thumbnails &
     stream info
 
 ## Example Report
 
-The HTML report includes: - Average tuning times per profile\
-- Thumbnails for visual verification\
-- Stream info (video/audio codecs)\
-- Debug logs (if enabled)
+The HTML report includes: - Average tuning times per profile -
+Thumbnails for visual verification - Stream info (video/audio codecs) -
+Debug logs (if enabled)
 
 ## Notes
 
